@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glow & Glamour - Sistema de Ventas e Inventario</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- SheetJS (Excel) & jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Firebase SDK (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <!-- CSS Personalizado -->
+    <link rel="stylesheet" href="styles.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        roseGold: {
+                            50: '#fdf8f6', 100: '#fbe8e6', 200: '#f5d3cf', 300: '#ebb5af',
+                            400: '#e08c82', 500: '#d16659', 600: '#bc4e42', 700: '#9d3f34',
+                            800: '#82372f', 900: '#6c322b',
+                        }
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="custom-bg text-gray-800 font-sans min-h-screen flex flex-col">
+
+    <!-- 1. & 10. PANTALLA DE ACCESO / BIENVENIDA & LOGIN ADMIN PROTEGIDO -->
+    <div id="auth-landing-screen" class="fixed inset-0 bg-roseGold-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-roseGold-100 text-center space-y-6">
+            <div class="flex flex-col items-center justify-center space-y-2">
+                <div id="company-logo-container" class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-roseGold-100 flex items-center justify-center text-roseGold-600 shadow-inner overflow-hidden border-2 border-roseGold-200 relative group cursor-pointer" onclick="document.getElementById('company-logo-file').click()" title="Haz clic para subir o cambiar el logo">
+                    <img id="company-logo-img" src="" alt="Logo" class="w-full h-full object-cover hidden">
+                    <i id="company-logo-icon" class="fa-solid fa-wand-magic-sparkles text-3xl"></i>
+                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-medium px-1">Subir Logo</div>
+                </div>
+                <input type="file" id="company-logo-file" accept="image/png, image/jpeg, image/jpg" class="hidden" onchange="handleCompanyLogoUpload(event)">
+                <span class="text-[10px] text-gray-400">Espacio para logo corporativo (PNG / JPG)</span>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Glow & <span class="text-roseGold-600">Glamour</span></h1>
+                <p class="text-xs text-gray-500 mt-1">Sistema de Belleza & Catálogo en Bolivianos (Bs.)</p>
+            </div>
+            
+            <div class="space-y-3 pt-2">
+                <button onclick="enterAsCustomer()" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm transition-all shadow-md flex items-center justify-center space-x-2">
+                    <i class="fa-brands fa-whatsapp text-lg"></i>
+                    <span>Ver Catálogo (Cliente / WhatsApp)</span>
+                </button>
+                <div class="relative flex py-2 items-center">
+                    <div class="flex-grow border-t border-gray-200"></div>
+                    <span class="flex-shrink mx-4 text-xs text-gray-400 uppercase font-medium">Acceso Administrador Segurizado</span>
+                    <div class="flex-grow border-t border-gray-200"></div>
+                </div>
+                <div class="space-y-2 text-left">
+                    <label class="block text-xs font-semibold text-gray-600">Correo Electrónico</label>
+                    <input type="email" id="admin-email" placeholder="admin@glowglamour.com" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-roseGold-500 focus:outline-none">
+                </div>
+                <div class="space-y-2 text-left">
+                    <label class="block text-xs font-semibold text-gray-600">Contraseña</label>
+                    <input type="password" id="admin-password" placeholder="••••••••" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-roseGold-500 focus:outline-none">
+                </div>
+                <button onclick="loginAsAdmin()" class="w-full py-3 px-4 primary-btn font-semibold rounded-xl text-sm transition-all shadow-md flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-lock-open"></i>
+                    <span>Iniciar Sesión Admin</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- HEADER PRINCIPAL (ADMIN AUTENTICADO) -->
+    <header id="main-header" class="bg-white border-b border-roseGold-200 sticky top-0 z-30 shadow-sm hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-roseGold-500 text-white flex items-center justify-center shadow-md overflow-hidden">
+                        <img id="header-logo-img" src="" alt="Logo" class="w-full h-full object-cover hidden">
+                        <i id="header-logo-icon" class="fa-solid fa-wand-magic-sparkles text-lg"></i>
+                    </div>
+                    <div>
+                        <span class="text-xl font-bold tracking-tight text-gray-900">Glow & <span class="text-roseGold-600">Glamour</span></span>
+                        <p class="text-[10px] text-gray-500">Moneda: Bolivianos (Bs.)</p>
+                    </div>
+                </div>
+                <!-- 5. Navegación: Ventas e Historial -->
+                <nav class="hidden md:flex space-x-1 lg:space-x-2">
+                    <button onclick="switchTab('pos')" id="nav-pos" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-roseGold-500 text-white shadow-sm flex items-center space-x-2">
+                        <i class="fa-solid fa-cash-register"></i>
+                        <span>Ventas</span>
+                    </button>
+                    <button onclick="switchTab('inventory')" id="nav-inventory" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-roseGold-600 hover:bg-roseGold-50 transition-colors flex items-center space-x-2">
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                        <span>Inventario</span>
+                    </button>
+                    <button onclick="switchTab('history')" id="nav-history" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-roseGold-600 hover:bg-roseGold-50 transition-colors flex items-center space-x-2">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                        <span>Historial</span>
+                    </button>
+                    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-roseGold-600 hover:bg-roseGold-50 transition-colors flex items-center space-x-2">
+                        <i class="fa-solid fa-chart-pie"></i>
+                        <span>Resumen</span>
+                    </button>
+                </nav>
+                <div class="flex items-center space-x-3">
+                    <span id="current-time" class="text-xs font-medium text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full hidden sm:inline-block"></span>
+                    <button onclick="logoutAdmin()" title="Cerrar sesión" class="p-2 text-gray-400 hover:text-roseGold-600 rounded-full hover:bg-roseGold-50 transition-colors">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Navegación móvil inferior -->
+        <div class="md:hidden flex justify-around border-t border-roseGold-100 bg-white py-2 px-1">
+            <button onclick="switchTab('pos')" id="m-nav-pos" class="m-nav-btn flex flex-col items-center text-roseGold-600 text-xs font-medium px-2 py-1">
+                <i class="fa-solid fa-cash-register text-lg mb-0.5"></i><span>Ventas</span>
+            </button>
+            <button onclick="switchTab('inventory')" id="m-nav-inventory" class="m-nav-btn flex flex-col items-center text-gray-500 text-xs font-medium px-2 py-1">
+                <i class="fa-solid fa-boxes-stacked text-lg mb-0.5"></i><span>Inventario</span>
+            </button>
+            <button onclick="switchTab('history')" id="m-nav-history" class="m-nav-btn flex flex-col items-center text-gray-500 text-xs font-medium px-2 py-1">
+                <i class="fa-solid fa-clock-rotate-left text-lg mb-0.5"></i><span>Historial</span>
+            </button>
+            <button onclick="switchTab('dashboard')" id="m-nav-dashboard" class="m-nav-btn flex flex-col items-center text-gray-500 text-xs font-medium px-2 py-1">
+                <i class="fa-solid fa-chart-pie text-lg mb-0.5"></i><span>Resumen</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- VISTA 1: VENTAS -->
+        <section id="view-pos" class="tab-content grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div class="lg:col-span-7 xl:col-span-8 flex flex-col space-y-4">
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-roseGold-100 flex flex-col sm:flex-row gap-3">
+                    <div class="relative flex-grow">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-gray-400"></i>
+                        <input type="text" id="pos-search" oninput="filterProducts()" placeholder="Buscar por nombre o SKU..." class="w-full pl-10 pr-4 py-2 bg-roseGold-50/50 border border-roseGold-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-roseGold-500 text-sm">
+                    </div>
+                    <div class="flex items-center space-x-2 overflow-x-auto pb-1 sm:pb-0">
+                        <button onclick="filterCategory('Todos')" id="cat-Todos" class="cat-pill px-3.5 py-2 rounded-xl text-xs font-semibold bg-roseGold-500 text-white whitespace-nowrap shadow-sm">Todos</button>
+                        <button onclick="filterCategory('Maquillaje')" id="cat-Maquillaje" class="cat-pill px-3.5 py-2 rounded-xl text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-roseGold-100 whitespace-nowrap">Maquillaje</button>
+                        <button onclick="filterCategory('Skincare')" id="cat-Skincare" class="cat-pill px-3.5 py-2 rounded-xl text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-roseGold-100 whitespace-nowrap">Skincare</button>
+                        <button onclick="filterCategory('Capilar')" id="cat-Capilar" class="cat-pill px-3.5 py-2 rounded-xl text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-roseGold-100 whitespace-nowrap">Capilar</button>
+                        <button onclick="filterCategory('Perfumes')" id="cat-Perfumes" class="cat-pill px-3.5 py-2 rounded-xl text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-roseGold-100 whitespace-nowrap">Perfumes</button>
+                    </div>
+                </div>
+
+                <div id="pos-product-grid" class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto max-h-[calc(100vh-260px)] pr-1"></div>
+            </div>
+
+            <div class="lg:col-span-5 xl:col-span-4 bg-white rounded-2xl shadow-sm border border-roseGold-100 flex flex-col h-[calc(100vh-130px)] sticky top-20">
+                <div class="p-4 border-b border-roseGold-100 flex justify-between items-center bg-roseGold-50/50 rounded-t-2xl">
+                    <h2 class="font-bold text-gray-800 flex items-center space-x-2">
+                        <i class="fa-solid fa-cart-shopping text-roseGold-600"></i>
+                        <span>Carrito de Compras</span>
+                    </h2>
+                    <span id="cart-count-badge" class="bg-roseGold-500 text-white text-xs px-2.5 py-0.5 rounded-full font-semibold">0 items</span>
+                </div>
+
+                <div id="cart-items-container" class="flex-grow overflow-y-auto p-4 space-y-3 divide-y divide-gray-100">
+                    <div class="flex flex-col items-center justify-center h-full text-gray-400 py-12">
+                        <i class="fa-solid fa-bag-shopping text-4xl mb-3 text-roseGold-200"></i>
+                        <p class="text-sm font-medium">El carrito está vacío</p>
+                    </div>
+                </div>
+
+                <!-- Totales (7. Descuento manual, 8. Sin IVA, 9. Bolivianos Bs.) -->
+                <div class="p-4 bg-white border-t border-roseGold-100 rounded-b-2xl space-y-3 shadow-lg">
+                    <div class="space-y-1.5 text-sm">
+                        <div class="flex justify-between text-gray-600">
+                            <span>Subtotal</span>
+                            <span id="cart-subtotal">Bs. 0.00</span>
+                        </div>
+                        <div class="flex justify-between text-gray-600 items-center">
+                            <span>Descuento Manual (Bs.)</span>
+                            <input type="number" id="cart-discount" min="0" value="0" onchange="updateCartCalculations()" class="w-20 text-right px-2 py-1 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium focus:ring-1 focus:ring-roseGold-500">
+                        </div>
+                        <div class="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t border-gray-100">
+                            <span>Total a Pagar</span>
+                            <span id="cart-total" class="text-roseGold-600">Bs. 0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 pt-2">
+                        <button onclick="clearCart()" class="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl text-xs transition-colors flex items-center justify-center space-x-1">
+                            <i class="fa-solid fa-trash-can"></i><span>Cancelar</span>
+                        </button>
+                        <button onclick="handleCheckoutAction()" id="checkout-btn" disabled class="py-2.5 px-4 bg-roseGold-500 hover:bg-roseGold-600 text-white font-medium rounded-xl text-xs transition-all shadow-sm opacity-50 cursor-not-allowed flex items-center justify-center space-x-1">
+                            <i class="fa-solid fa-credit-card"></i>
+                            <span id="checkout-btn-text">Cobrar</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VISTA 2: INVENTARIO -->
+        <section id="view-inventory" class="tab-content hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-roseGold-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900">Gestión de Inventario</h2>
+                    <p class="text-xs text-gray-500 mt-0.5">Sube catálogo por Excel o añade productos con imagen a Cloudinary.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                    <button onclick="downloadExcelTemplate()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2.5 rounded-xl transition-all shadow-sm flex items-center space-x-1.5">
+                        <i class="fa-solid fa-file-excel"></i><span>Plantilla Excel</span>
+                    </button>
+                    <label class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-2.5 rounded-xl transition-all shadow-sm flex items-center space-x-1.5 cursor-pointer">
+                        <i class="fa-solid fa-cloud-arrow-up"></i><span>Subir Excel</span>
+                        <input type="file" id="excel-file-input" accept=".xlsx, .xls, .csv" onchange="handleExcelUpload(event)" class="hidden">
+                    </label>
+                    <button onclick="openProductModal()" class="primary-btn text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shadow-sm flex items-center space-x-2">
+                        <i class="fa-solid fa-plus"></i><span>Nuevo Producto</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-roseGold-100 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-roseGold-50/70 border-b border-roseGold-100 text-xs uppercase text-gray-600 font-semibold tracking-wider">
+                                <th class="py-3.5 px-4">Producto</th>
+                                <th class="py-3.5 px-4">SKU</th>
+                                <th class="py-3.5 px-4">Categoría</th>
+                                <th class="py-3.5 px-4 text-right">Precio (Bs.)</th>
+                                <th class="py-3.5 px-4 text-center">Stock</th>
+                                <th class="py-3.5 px-4 text-center">Estado</th>
+                                <th class="py-3.5 px-4 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventory-table-body" class="divide-y divide-gray-100 text-sm"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- VISTA 3: HISTORIAL -->
+        <section id="view-history" class="tab-content hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-roseGold-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900">Historial de Ventas</h2>
+                    <p class="text-xs text-gray-500 mt-0.5">Registro de transacciones y reporte diario en PDF.</p>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button onclick="downloadDailyReportPDF()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-xl transition-colors flex items-center space-x-1.5 shadow-sm">
+                        <i class="fa-solid fa-file-pdf"></i><span>Descargar Reporte del Día en PDF</span>
+                    </button>
+                    <button onclick="clearSalesHistory()" class="px-4 py-2 bg-gray-100 hover:bg-red-50 hover:text-red-600 text-gray-600 text-xs font-semibold rounded-xl transition-colors flex items-center space-x-1.5">
+                        <i class="fa-solid fa-trash-can"></i><span>Limpiar</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-roseGold-100 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-roseGold-50/70 border-b border-roseGold-100 text-xs uppercase text-gray-600 font-semibold tracking-wider">
+                                <th class="py-3.5 px-4">ID Transacción</th>
+                                <th class="py-3.5 px-4">Fecha y Hora</th>
+                                <th class="py-3.5 px-4">Items Vendidos</th>
+                                <th class="py-3.5 px-4">Método Pago</th>
+                                <th class="py-3.5 px-4 text-right">Total (Bs.)</th>
+                                <th class="py-3.5 px-4 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sales-history-body" class="divide-y divide-gray-100 text-sm"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- VISTA 4: RESUMEN / DASHBOARD -->
+        <section id="view-dashboard" class="tab-content hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-roseGold-100">
+                <h2 class="text-xl font-bold text-gray-900">Resumen y Estadísticas</h2>
+                <p class="text-xs text-gray-500 mt-0.5">Métricas clave en Bolivianos (Bs.).</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-roseGold-100 flex items-center space-x-4">
+                    <div class="p-3 bg-rose-50 text-roseGold-600 rounded-xl"><i class="fa-solid fa-sack-dollar text-2xl"></i></div>
+                    <div>
+                        <p class="text-xs font-medium text-gray-500">Ventas Totales Hoy</p>
+                        <h3 id="stat-sales-today" class="text-2xl font-bold text-gray-900 mt-1">Bs. 0.00</h3>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-roseGold-100 flex items-center space-x-4">
+                    <div class="p-3 bg-purple-50 text-purple-600 rounded-xl"><i class="fa-solid fa-bag-shopping text-2xl"></i></div>
+                    <div>
+                        <p class="text-xs font-medium text-gray-500">Productos Vendidos</p>
+                        <h3 id="stat-items-sold" class="text-2xl font-bold text-gray-900 mt-1">0</h3>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-roseGold-100 flex items-center space-x-4">
+                    <div class="p-3 bg-blue-50 text-blue-600 rounded-xl"><i class="fa-solid fa-receipt text-2xl"></i></div>
+                    <div>
+                        <p class="text-xs font-medium text-gray-500">Transacciones</p>
+                        <h3 id="stat-transactions" class="text-2xl font-bold text-gray-900 mt-1">0</h3>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-roseGold-100 flex items-center space-x-4">
+                    <div class="p-3 bg-amber-50 text-amber-600 rounded-xl"><i class="fa-solid fa-warehouse text-2xl"></i></div>
+                    <div>
+                        <p class="text-xs font-medium text-gray-500">Valor del Inventario</p>
+                        <h3 id="stat-inventory-val" class="text-2xl font-bold text-gray-900 mt-1">Bs. 0.00</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-roseGold-100">
+                    <h3 class="font-bold text-gray-900 mb-4 flex items-center space-x-2">
+                        <i class="fa-solid fa-triangle-exclamation text-amber-500"></i><span>Alertas de Stock Bajo</span>
+                    </h3>
+                    <div id="low-stock-list" class="space-y-3"></div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-roseGold-100">
+                    <h3 class="font-bold text-gray-900 mb-4 flex items-center space-x-2">
+                        <i class="fa-solid fa-chart-pie text-roseGold-600"></i><span>Distribución por Categoría</span>
+                    </h3>
+                    <div id="category-stats-list" class="space-y-3"></div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- CHECKOUT MODAL -->
+    <div id="checkout-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-roseGold-100">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-900 flex items-center space-x-2">
+                    <i class="fa-solid fa-cash-register text-roseGold-600"></i><span>Finalizar Venta / Cobro</span>
+                </h3>
+                <button onclick="closeCheckoutModal()" class="text-gray-400 hover:text-gray-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="space-y-4">
+                <div class="bg-roseGold-50 p-4 rounded-2xl flex justify-between items-center">
+                    <span class="text-sm font-medium text-gray-600">Total a Pagar:</span>
+                    <span id="modal-total-display" class="text-2xl font-extrabold text-roseGold-600">Bs. 0.00</span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-2">Método de Pago</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="setPaymentMethod('Efectivo')" id="pay-efectivo" class="pay-method-btn py-2.5 px-3 rounded-xl text-xs font-semibold border-2 border-roseGold-500 bg-roseGold-50 text-roseGold-700 flex flex-col items-center space-y-1">
+                            <i class="fa-solid fa-money-bill-wave text-base"></i><span>Efectivo</span>
+                        </button>
+                        <button onclick="setPaymentMethod('Tarjeta')" id="pay-tarjeta" class="pay-method-btn py-2.5 px-3 rounded-xl text-xs font-semibold border-2 border-gray-200 bg-white text-gray-600 flex flex-col items-center space-y-1">
+                            <i class="fa-solid fa-credit-card text-base"></i><span>Tarjeta</span>
+                        </button>
+                        <button onclick="setPaymentMethod('Transferencia')" id="pay-transferencia" class="pay-method-btn py-2.5 px-3 rounded-xl text-xs font-semibold border-2 border-gray-200 bg-white text-gray-600 flex flex-col items-center space-y-1">
+                            <i class="fa-solid fa-qrcode text-base"></i><span>Transfer</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="cash-input-section" class="space-y-2">
+                    <label class="block text-xs font-semibold text-gray-600">Efectivo Recibido (Bs.)</label>
+                    <input type="number" id="cash-tendered" oninput="calculateChange()" placeholder="0.00" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-roseGold-500 font-semibold">
+                    <div class="flex justify-between text-xs text-gray-500 pt-1">
+                        <span>Cambio / Vuelto:</span>
+                        <span id="cash-change" class="font-bold text-gray-800">Bs. 0.00</span>
+                    </div>
+                </div>
+
+                <button onclick="processCheckout()" class="w-full py-3 primary-btn font-bold rounded-xl text-sm transition-all shadow-md flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-circle-check"></i><span>Confirmar y Emitir Recibo</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- RECEIPT MODAL -->
+    <div id="receipt-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-roseGold-100 flex flex-col max-h-[90vh]">
+            <div id="printable-receipt" class="bg-white p-4 font-mono text-xs space-y-3 overflow-y-auto flex-grow">
+                <div class="text-center space-y-1">
+                    <h4 class="font-bold text-base font-sans tracking-wide text-roseGold-700">GLOW & GLAMOUR</h4>
+                    <p class="text-gray-500 text-[10px]">Cosméticos & Belleza Profesional</p>
+                    <p class="text-gray-500 text-[10px]">Oruro, Bolivia</p>
+                    <div class="border-b border-dashed border-gray-300 my-2"></div>
+                </div>
+                <div class="space-y-0.5 text-gray-600 text-[11px]">
+                    <div class="flex justify-between"><span>Transacción:</span> <span id="rec-id" class="font-bold"></span></div>
+                    <div class="flex justify-between"><span>Fecha:</span> <span id="rec-date"></span></div>
+                    <div class="flex justify-between"><span>Método Pago:</span> <span id="rec-payment"></span></div>
+                </div>
+                <div class="border-b border-dashed border-gray-300 my-2"></div>
+                <div>
+                    <div class="font-bold text-gray-700 mb-1">DETALLE DE PRODUCTOS</div>
+                    <div id="rec-items-list" class="space-y-1"></div>
+                </div>
+                <div class="border-b border-dashed border-gray-300 my-2"></div>
+                <div class="space-y-1 text-[11px]">
+                    <div class="flex justify-between"><span>Subtotal:</span> <span id="rec-subtotal"></span></div>
+                    <div class="flex justify-between"><span>Descuento:</span> <span id="rec-discount"></span></div>
+                    <div class="flex justify-between font-bold text-sm pt-1 border-t border-gray-200"><span>TOTAL (Bs.):</span> <span id="rec-total" class="text-roseGold-600"></span></div>
+                </div>
+                <div class="border-b border-dashed border-gray-300 my-2"></div>
+                <div class="text-center text-[10px] text-gray-500 space-y-1 pt-1"><p>¡Gracias por tu compra!</p></div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 pt-4 border-t border-gray-100 mt-2">
+                <button onclick="window.print()" class="py-2.5 px-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-xs transition-colors flex items-center justify-center space-x-1">
+                    <i class="fa-solid fa-print"></i><span>Imprimir</span>
+                </button>
+                <button onclick="closeReceiptModal()" class="py-2.5 px-3 primary-btn font-semibold rounded-xl text-xs transition-colors flex items-center justify-center space-x-1">
+                    <i class="fa-solid fa-check"></i><span>Cerrar</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL NUEVO / EDITAR PRODUCTO -->
+    <div id="product-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-roseGold-100">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="product-modal-title" class="text-lg font-bold text-gray-900 flex items-center space-x-2">
+                    <i class="fa-solid fa-box text-roseGold-600"></i><span>Nuevo Producto</span>
+                </h3>
+                <button onclick="closeProductModal()" class="text-gray-400 hover:text-gray-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <form id="product-form" onsubmit="saveProduct(event)" class="space-y-4">
+                <input type="hidden" id="edit-product-id">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Nombre del Producto</label>
+                    <input type="text" id="prod-name" required class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-roseGold-500 focus:outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">SKU / Código</label>
+                        <input type="text" id="prod-sku" required class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-roseGold-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Categoría</label>
+                        <select id="prod-cat" class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-roseGold-500 focus:outline-none">
+                            <option value="Maquillaje">Maquillaje</option>
+                            <option value="Skincare">Skincare</option>
+                            <option value="Capilar">Capilar</option>
+                            <option value="Perfumes">Perfumes</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Precio (Bs.)</label>
+                        <input type="number" step="0.01" id="prod-price" required class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-roseGold-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Stock Inicial</label>
+                        <input type="number" id="prod-stock" required class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-roseGold-500 focus:outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Imagen del Producto (Sube a Cloudinary)</label>
+                    <input type="file" id="prod-image-file" accept="image/png, image/jpeg, image/jpg" class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-roseGold-500 focus:outline-none file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-roseGold-50 file:text-roseGold-700 hover:file:bg-roseGold-100">
+                    <input type="hidden" id="prod-image-url">
+                    <div id="image-preview-container" class="mt-2 hidden">
+                        <img id="image-preview" class="w-16 h-16 rounded-xl object-cover border border-roseGold-200">
+                    </div>
+                </div>
+                <div class="pt-2">
+                    <button type="submit" id="save-prod-btn" class="w-full py-3 primary-btn font-semibold rounded-xl text-sm transition-all shadow-md">Guardar Producto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Cargar Configuración Segura y Script Principal -->
+    <script src="config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+/* 3.- CSS UNIVERSAL / VARIABLES DE COLORES (Fácil edición) */
+:root {
+    --primary-color: #d16659;
+    --primary-hover: #bc4e42;
+    --bg-color: #fdf8f6;
+    --accent-color: #f5d3cf;
+}
+
+.custom-bg { background-color: var(--bg-color); }
+.primary-btn { background-color: var(--primary-color); color: white; }
+.primary-btn:hover { background-color: var(--primary-hover); }
+
+/* Scrollbar estilizado */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: var(--primary-color); border-radius: 3px; }
+
+/* Ajustes Responsive para Celulares y Tablets */
+@media (max-width: 768px) {
+    .mobile-stack { flex-direction: column; }
+    .pos-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media print {
+    body * { visibility: hidden; }
+    #printable-receipt, #printable-receipt * { visibility: visible; }
+    #printable-receipt { position: absolute; left: 0; top: 0; width: 100%; }
+}
