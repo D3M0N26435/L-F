@@ -6,7 +6,7 @@ try {
     db = firebase.firestore();
     auth = firebase.auth();
 } catch (e) {
-    console.error("Error al inicializar Firebase. Asegúrate de configurar config.js:", e);
+    console.error("Error al inicializar Firebase. Revisa config.js:", e);
 }
 
 // ESTADO GLOBAL
@@ -15,20 +15,28 @@ let cart = [];
 let salesHistory = [];
 let currentCategory = 'Todos';
 let currentPaymentMethod = 'Efectivo';
-let userRole = 'customer'; // 'customer' o 'admin'
-let whatsappNumber = '59170000000'; // Tu número WhatsApp personalizado
+let whatsappNumber = '59170000000'; // Tu número de WhatsApp con código de país (591)
 
-// INICIALIZACIÓN AL CARGAR LA PÁGINA
+// ESCUCHADOR DE ESTADO EN TIEMPO REAL (FIREBASE AUTH)
 window.addEventListener('DOMContentLoaded', () => {
     updateClock();
     setInterval(updateClock, 1000);
-    loadDataFromFirebase();
-    
-    // Cargar logo guardado localmente/sesión
-    const savedLogo = localStorage.getItem('gg_logo');
-    if (savedLogo) setLogoUI(savedLogo);
 
-    // Event listener para previsualizar y subir imagen a Cloudinary
+    // Escuchar si hay sesión iniciada en Firebase
+    if (auth) {
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                // Hay Administrador Autenticado
+                setupAdminView();
+            } else {
+                // Modo Cliente / No Autenticado
+                setupCustomerView();
+            }
+            loadDataFromFirebase();
+        });
+    }
+
+    // Listener para subir imagen de producto a Cloudinary
     const prodImageInput = document.getElementById('prod-image-file');
     if (prodImageInput) {
         prodImageInput.addEventListener('change', async function(e) {
@@ -42,7 +50,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 reader.readAsDataURL(file);
 
                 const btn = document.getElementById('save-prod-btn');
-                btn.innerText = 'Subiendo imagen a Cloudinary...';
+                btn.innerText = 'Subiendo a Cloudinary...';
                 btn.disabled = true;
 
                 try {
@@ -52,7 +60,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     btn.disabled = false;
                 } catch (err) {
                     console.error("Error subiendo imagen:", err);
-                    alert("No se pudo subir la imagen a Cloudinary. Verifica tu conexión o preset.");
+                    alert("No se pudo subir la imagen a Cloudinary.");
                     btn.innerText = 'Guardar Producto';
                     btn.disabled = false;
                 }
@@ -66,40 +74,100 @@ function updateClock() {
     document.getElementById('current-time').innerText = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
 }
 
-// CONTROL DE INTERFAZ Y SEGURIDAD SEGÚN EL ROL
-function applyRolePermissions() {
-    const adminElements = document.querySelectorAll('.admin-only');
-    const badge = document.getElementById('user-role-badge');
-    const posLabel = document.getElementById('nav-pos-label');
+// VERIFICACIÓN DE SEGURIDAD: ¿ES ADMIN EN FIREBASE?
+function isAdmin() {
+    return auth && auth.currentUser !== null;
+}
 
-    if (userRole === 'admin') {
-        adminElements.forEach(el => el.classList.remove('hidden'));
-        if (badge) {
-            badge.innerText = 'Modo: Administrador';
-            badge.className = 'text-[10px] text-roseGold-600 font-bold';
-        }
-        if (posLabel) posLabel.innerText = 'Ventas';
-        document.getElementById('checkout-btn-text').innerText = 'Cobrar';
-    } else {
-        // Ocultar todas las herramientas de admin para el cliente
-        adminElements.forEach(el => el.classList.add('hidden'));
-        if (badge) {
-            badge.innerText = 'Modo: Catálogo Cliente';
-            badge.className = 'text-[10px] text-emerald-600 font-bold';
-        }
-        if (posLabel) posLabel.innerText = 'Catálogo';
-        document.getElementById('checkout-btn-text').innerText = 'Enviar Pedido por WhatsApp';
-        
-        // Forzar permanencia en la pestaña de Ventas/Catálogo
-        switchTab('pos');
+// CONFIGURAR INTERFAZ DE ADMINISTRADOR
+function setupAdminView() {
+    document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+    
+    const badge = document.getElementById('user-role-badge');
+    if (badge) {
+        badge.innerText = `Admin: ${auth.currentUser.email}`;
+        badge.className = 'text-[10px] text-roseGold-600 font-bold';
+    }
+    
+    const posLabel = document.getElementById('nav-pos-label');
+    if (posLabel) posLabel.innerText = 'Ventas';
+
+    document.getElementById('checkout-btn-text').innerText = 'Cobrar';
+    document.getElementById('auth-landing-screen').classList.add('hidden');
+    document.getElementById('main-header').classList.remove('hidden');
+}
+
+// CONFIGURAR INTERFAZ DE CLIENTE
+function setupCustomerView() {
+    document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
+    
+    const badge = document.getElementById('user-role-badge');
+    if (badge) {
+        badge.innerText = 'Modo: Catálogo Cliente';
+        badge.className = 'text-[10px] text-emerald-600 font-bold';
+    }
+
+    const posLabel = document.getElementById('nav-pos-label');
+    if (posLabel) posLabel.innerText = 'Catálogo';
+
+    document.getElementById('checkout-btn-text').innerText = 'Enviar Pedido por WhatsApp';
+
+    // Forzar pestaña de ventas / catálogo únicamente
+    switchTab('pos');
+}
+
+// INGRESO COMO CLIENTE
+function enterAsCustomer() {
+    if (auth && auth.currentUser) {
+        auth.signOut();
+    }
+    document.getElementById('auth-landing-screen').classList.add('hidden');
+    document.getElementById('main-header').classList.remove('hidden');
+    setupCustomerView();
+}
+
+// LOGIN ADMIN CON FIREBASE AUTHENTICATION
+async function loginAsAdmin() {
+    const email = document.getElementById('admin-email').value.trim();
+    const password = document.getElementById('admin-password').value.trim();
+
+    if (!email || !password) {
+        alert('Por favor ingresa tu correo y contraseña.');
+        return;
+    }
+
+    try {
+        await auth.signInWithEmailAndPassword(email, password);
+        alert('¡Bienvenido, Administrador!');
+    } catch (error) {
+        console.error(error);
+        alert('Acceso denegado: ' + translateFirebaseError(error.code));
     }
 }
 
-// CAMBIO DE PESTAÑA CON VERIFICACIÓN DE SEGURIDAD
+function translateFirebaseError(code) {
+    switch (code) {
+        case 'auth/user-not-found': return 'El usuario no está registrado.';
+        case 'auth/wrong-password': return 'Contraseña incorrecta.';
+        case 'auth/invalid-email': return 'El correo electrónico no es válido.';
+        case 'auth/invalid-credential': return 'Credenciales inválidas.';
+        default: return 'Error al iniciar sesión.';
+    }
+}
+
+// CERRAR SESIÓN
+function logoutSession() {
+    if (auth) auth.signOut();
+    document.getElementById('admin-email').value = '';
+    document.getElementById('admin-password').value = '';
+    document.getElementById('auth-landing-screen').classList.remove('hidden');
+    document.getElementById('main-header').classList.add('hidden');
+}
+
+// CAMBIO DE PESTAÑA CON BLOQUEO DE SEGURIDAD
 function switchTab(tabId) {
-    // PROTECCIÓN DE RUTA: Si no es admin e intenta ir a otra sección, se bloquea
-    if (userRole !== 'admin' && tabId !== 'pos') {
-        alert("Acceso denegado: Esta sección requiere privilegios de administrador.");
+    if (tabId !== 'pos' && !isAdmin()) {
+        alert("🔒 Acceso restringido. Inicia sesión como administrador para acceder.");
         return;
     }
 
@@ -121,49 +189,6 @@ function switchTab(tabId) {
     if (tabId === 'dashboard') updateDashboardStats();
 }
 
-// INGRESO CLIENTE
-function enterAsCustomer() {
-    userRole = 'customer';
-    document.getElementById('auth-landing-screen').classList.add('hidden');
-    document.getElementById('main-header').classList.remove('hidden');
-    applyRolePermissions();
-}
-
-// AUTENTICACIÓN ADMIN FIREBASE
-async function loginAsAdmin() {
-    const email = document.getElementById('admin-email').value;
-    const password = document.getElementById('admin-password').value;
-
-    if (!email || !password) {
-        alert('Por favor ingresa correo y contraseña.');
-        return;
-    }
-
-    try {
-        await auth.signInWithEmailAndPassword(email, password);
-        userRole = 'admin';
-        document.getElementById('auth-landing-screen').classList.add('hidden');
-        document.getElementById('main-header').classList.remove('hidden');
-        applyRolePermissions();
-    } catch (error) {
-        alert('Acceso denegado. Credenciales incorrectas o usuario no registrado.');
-        console.error(error);
-    }
-}
-
-// CIERRE DE SESIÓN SEGURO
-function logoutSession() {
-    if (auth && auth.currentUser) {
-        auth.signOut();
-    }
-    userRole = 'customer';
-    document.getElementById('admin-email').value = '';
-    document.getElementById('admin-password').value = '';
-    document.getElementById('auth-landing-screen').classList.remove('hidden');
-    document.getElementById('main-header').classList.add('hidden');
-    applyRolePermissions();
-}
-
 // SUBIR IMAGEN A CLOUDINARY
 async function uploadImageToCloudinary(file) {
     const formData = new FormData();
@@ -176,20 +201,24 @@ async function uploadImageToCloudinary(file) {
     });
     const data = await response.json();
     if (data.secure_url) return data.secure_url;
-    else throw new Error('Fallo en la subida a Cloudinary');
+    else throw new Error('Fallo al subir a Cloudinary');
 }
 
-// CARGAR LOGO EMPRESA
+// SUBIR Y GUARDAR LOGO DE LA EMPRESA
 async function handleCompanyLogoUpload(e) {
+    if (!isAdmin()) {
+        alert("Solo el administrador puede cambiar el logo.");
+        return;
+    }
     const file = e.target.files[0];
     if (file) {
         try {
             const logoUrl = await uploadImageToCloudinary(file);
             localStorage.setItem('gg_logo', logoUrl);
             setLogoUI(logoUrl);
-            alert('¡Logo actualizado con éxito!');
+            alert('¡Logo actualizado!');
         } catch (err) {
-            alert('Error al subir el logo a Cloudinary.');
+            alert('Error al subir el logo.');
         }
     }
 }
@@ -206,35 +235,32 @@ function setLogoUI(url) {
     });
 }
 
-// SINCRONIZACIÓN FIRESTORE
+// CARGAR DATOS DE FIRESTORE
 async function loadDataFromFirebase() {
     if (!db) return;
     try {
         const prodSnapshot = await db.collection('products').get();
-        if (!prodSnapshot.empty) {
-            products = [];
-            prodSnapshot.forEach(doc => products.push({ id: doc.id, ...doc.data() }));
-        } else {
-            products = [
-                { id: '1', name: 'Labial Matte Velvet', sku: 'LBL-01', category: 'Maquillaje', price: 65.00, stock: 25, image: 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?auto=format&fit=crop&w=300&q=80' },
-                { id: '2', name: 'Sérum Facial Hialurónico', sku: 'SKN-02', category: 'Skincare', price: 140.00, stock: 12, image: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=300&q=80' }
-            ];
+        products = [];
+        prodSnapshot.forEach(doc => products.push({ id: doc.id, ...doc.data() }));
+
+        if (isAdmin()) {
+            const histSnapshot = await db.collection('salesHistory').orderBy('timestamp', 'desc').get();
+            salesHistory = [];
+            histSnapshot.forEach(doc => salesHistory.push(doc.data()));
         }
 
-        const histSnapshot = await db.collection('salesHistory').orderBy('timestamp', 'desc').get();
-        salesHistory = [];
-        histSnapshot.forEach(doc => salesHistory.push(doc.data()));
-
         renderProducts();
-        renderInventoryTable();
-        renderSalesHistory();
-        updateDashboardStats();
+        if (isAdmin()) {
+            renderInventoryTable();
+            renderSalesHistory();
+            updateDashboardStats();
+        }
     } catch (err) {
-        console.error("Error sincronizando con Firebase:", err);
+        console.error("Error al cargar desde Firestore:", err);
     }
 }
 
-// FILTROS Y GRID DE PRODUCTOS
+// FILTROS Y CATÁLOGO
 function filterCategory(cat) {
     currentCategory = cat;
     document.querySelectorAll('.cat-pill').forEach(btn => {
@@ -242,7 +268,7 @@ function filterCategory(cat) {
         btn.classList.add('bg-gray-100', 'text-gray-600', 'hover:bg-roseGold-100');
     });
     const activeBtn = document.getElementById(`cat-${cat}`);
-    if(activeBtn) {
+    if (activeBtn) {
         activeBtn.classList.remove('bg-gray-100', 'text-gray-600', 'hover:bg-roseGold-100');
         activeBtn.classList.add('bg-roseGold-500', 'text-white', 'shadow-sm');
     }
@@ -263,7 +289,7 @@ function renderProducts() {
     });
 
     if (filtered.length === 0) {
-        grid.innerHTML = `<div class="col-span-full text-center py-12 text-gray-400 text-sm">No se encontraron productos</div>`;
+        grid.innerHTML = `<div class="col-span-full text-center py-12 text-gray-400 text-sm">No hay productos disponibles</div>`;
         return;
     }
 
@@ -293,14 +319,14 @@ function renderProducts() {
 function addToCart(productId) {
     const product = products.find(p => p.id === productId);
     if (!product || product.stock <= 0) {
-        alert('Producto sin stock disponible.');
+        alert('Producto agotado.');
         return;
     }
 
     const existing = cart.find(item => item.id === productId);
     if (existing) {
         if (existing.qty < product.stock) existing.qty++;
-        else alert('Stock máximo alcanzado.');
+        else alert('No hay más stock disponible.');
     } else {
         cart.push({ ...product, qty: 1 });
     }
@@ -386,10 +412,10 @@ function updateCartCalculations() {
 }
 
 function handleCheckoutAction() {
-    if (userRole === 'customer') {
-        sendOrderToWhatsApp();
-    } else {
+    if (isAdmin()) {
         openCheckoutModal();
+    } else {
+        sendOrderToWhatsApp();
     }
 }
 
@@ -400,17 +426,15 @@ function sendOrderToWhatsApp() {
         msg += `- ${item.name} (x${item.qty}) : Bs. ${(item.price * item.qty).toFixed(2)}%0A`;
     });
     msg += `%0A*Subtotal:* Bs. ${subtotal.toFixed(2)}`;
-    if(discount > 0) msg += `%0A*Descuento:* Bs. ${discount.toFixed(2)}`;
+    if (discount > 0) msg += `%0A*Descuento:* Bs. ${discount.toFixed(2)}`;
     msg += `%0A*TOTAL A PAGAR:* Bs. ${total.toFixed(2)}%0A%0A¡Quedo a la espera de la confirmación!`;
+
     window.open(`https://wa.me/${whatsappNumber}?text=${msg}`, '_blank');
 }
 
-// COBRO & RECIBO (Solo Admin)
+// PROCESAR COBRO (SOLO ADMIN)
 function openCheckoutModal() {
-    if (userRole !== 'admin') {
-        alert("Acceso denegado.");
-        return;
-    }
+    if (!isAdmin()) return;
     const { total } = updateCartCalculations();
     document.getElementById('modal-total-display').innerText = `Bs. ${total.toFixed(2)}`;
     document.getElementById('cash-tendered').value = '';
@@ -427,7 +451,7 @@ function setPaymentMethod(method) {
         btn.classList.add('border-gray-200', 'bg-white', 'text-gray-600');
     });
     const activeBtn = document.getElementById(`pay-${method.toLowerCase()}`);
-    if(activeBtn) {
+    if (activeBtn) {
         activeBtn.classList.remove('border-gray-200', 'bg-white', 'text-gray-600');
         activeBtn.classList.add('border-roseGold-500', 'bg-roseGold-50', 'text-roseGold-700');
     }
@@ -441,12 +465,12 @@ function calculateChange() {
 }
 
 async function processCheckout() {
-    if (userRole !== 'admin') return;
+    if (!isAdmin()) return;
 
     const { subtotal, discount, total } = updateCartCalculations();
     if (currentPaymentMethod === 'Efectivo') {
         const tendered = parseFloat(document.getElementById('cash-tendered').value) || 0;
-        if (tendered < total) { alert('El efectivo recibido es menor al total.'); return; }
+        if (tendered < total) { alert('El efectivo recibido es insuficiente.'); return; }
     }
 
     cart.forEach(item => {
@@ -498,12 +522,12 @@ function showReceiptModal(txn) {
 
 function closeReceiptModal() { document.getElementById('receipt-modal').classList.add('hidden'); }
 
-// INVENTARIO Y EXCEL (Solo Admin)
+// GESTIÓN DE INVENTARIO (SOLO ADMIN)
 function renderInventoryTable() {
-    if (userRole !== 'admin') return;
+    if (!isAdmin()) return;
     const query = document.getElementById('inventory-search')?.value.toLowerCase() || '';
     const tbody = document.getElementById('inventory-table-body');
-    if(!tbody) return;
+    if (!tbody) return;
     tbody.innerHTML = '';
 
     const filtered = products.filter(p => p.name.toLowerCase().includes(query) || p.sku.toLowerCase().includes(query));
@@ -534,7 +558,7 @@ function renderInventoryTable() {
 }
 
 function openProductModal(product = null) {
-    if (userRole !== 'admin') return;
+    if (!isAdmin()) return;
     document.getElementById('product-form').reset();
     document.getElementById('edit-product-id').value = '';
     document.getElementById('prod-image-url').value = '';
@@ -549,7 +573,7 @@ function openProductModal(product = null) {
         document.getElementById('prod-price').value = product.price;
         document.getElementById('prod-stock').value = product.stock;
         document.getElementById('prod-image-url').value = product.image;
-        if(product.image) {
+        if (product.image) {
             document.getElementById('image-preview').src = product.image;
             document.getElementById('image-preview-container').classList.remove('hidden');
         }
@@ -563,7 +587,7 @@ function closeProductModal() { document.getElementById('product-modal').classLis
 
 async function saveProduct(e) {
     e.preventDefault();
-    if (userRole !== 'admin') return;
+    if (!isAdmin()) return;
 
     const id = document.getElementById('edit-product-id').value;
     const name = document.getElementById('prod-name').value;
@@ -594,14 +618,14 @@ async function saveProduct(e) {
 }
 
 function editProduct(id) {
-    if (userRole !== 'admin') return;
+    if (!isAdmin()) return;
     const p = products.find(item => item.id == id);
     if (p) openProductModal(p);
 }
 
 async function deleteProduct(id) {
-    if (userRole !== 'admin') return;
-    if(confirm('¿Estás seguro de eliminar este producto?')) {
+    if (!isAdmin()) return;
+    if (confirm('¿Estás seguro de eliminar este producto?')) {
         products = products.filter(item => item.id != id);
         if (db) await db.collection('products').doc(id).delete();
         renderInventoryTable();
@@ -609,9 +633,9 @@ async function deleteProduct(id) {
     }
 }
 
-// EXCEL TEMPLATE Y UPLOAD
+// EXCEL Y REPORTE
 function downloadExcelTemplate() {
-    if (userRole !== 'admin') return;
+    if (!isAdmin()) return;
     const templateData = [
         { Nombre: "Labial Ejemplo", SKU: "LAB-99", Categoria: "Maquillaje", Precio_Bs: 50.00, Stock: 20, Imagen_URL: "https://images.unsplash.com/photo-1586495777744-4413f21062fa" }
     ];
@@ -622,7 +646,7 @@ function downloadExcelTemplate() {
 }
 
 async function handleExcelUpload(e) {
-    if (userRole !== 'admin') return;
+    if (!isAdmin()) return;
     const file = e.target.files[0];
     if (!file) return;
 
@@ -663,11 +687,10 @@ async function handleExcelUpload(e) {
     reader.readAsArrayBuffer(file);
 }
 
-// HISTORIAL Y REPORTE PDF
 function renderSalesHistory() {
-    if (userRole !== 'admin') return;
+    if (!isAdmin()) return;
     const tbody = document.getElementById('sales-history-body');
-    if(!tbody) return;
+    if (!tbody) return;
     tbody.innerHTML = '';
 
     if (salesHistory.length === 0) {
@@ -693,8 +716,8 @@ function renderSalesHistory() {
 }
 
 function clearSalesHistory() {
-    if (userRole !== 'admin') return;
-    if(confirm('¿Desea limpiar todo el historial de ventas?')) {
+    if (!isAdmin()) return;
+    if (confirm('¿Desea limpiar todo el historial de ventas?')) {
         salesHistory = [];
         renderSalesHistory();
         updateDashboardStats();
@@ -702,7 +725,7 @@ function clearSalesHistory() {
 }
 
 function downloadDailyReportPDF() {
-    if (userRole !== 'admin') return;
+    if (!isAdmin()) return;
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const todayStr = new Date().toLocaleDateString();
@@ -750,7 +773,7 @@ function downloadDailyReportPDF() {
 }
 
 function updateDashboardStats() {
-    if (userRole !== 'admin') return;
+    if (!isAdmin()) return;
     const todayStr = new Date().toLocaleDateString();
     const todayTxns = salesHistory.filter(t => t.date.includes(todayStr));
     const salesToday = todayTxns.reduce((sum, t) => sum + t.total, 0);
@@ -765,7 +788,7 @@ function updateDashboardStats() {
     const lowStockList = document.getElementById('low-stock-list');
     lowStockList.innerHTML = '';
     const lowStockItems = products.filter(p => p.stock <= 5);
-    if(lowStockItems.length === 0) {
+    if (lowStockItems.length === 0) {
         lowStockList.innerHTML = `<p class="text-xs text-gray-400">No hay alertas de stock bajo.</p>`;
     } else {
         lowStockItems.forEach(p => {
