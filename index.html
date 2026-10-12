@@ -38,7 +38,7 @@
 </head>
 <body class="custom-bg text-gray-800 font-sans min-h-screen flex flex-col">
 
-    <!-- 1. & 10. PANTALLA DE ACCESO / BIENVENIDA & LOGIN ADMIN PROTEGIDO -->
+    <!-- PANTALLA DE ACCESO / BIENVENIDA & LOGIN ADMIN PROTEGIDO -->
     <div id="auth-landing-screen" class="fixed inset-0 bg-roseGold-50 z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-roseGold-100 text-center space-y-6">
             <div class="flex flex-col items-center justify-center space-y-2">
@@ -58,11 +58,11 @@
             <div class="space-y-3 pt-2">
                 <button onclick="enterAsCustomer()" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm transition-all shadow-md flex items-center justify-center space-x-2">
                     <i class="fa-brands fa-whatsapp text-lg"></i>
-                    <span>Ver Catálogo (Cliente / WhatsApp)</span>
+                    <span>Ver Catálogo (Modo Cliente)</span>
                 </button>
                 <div class="relative flex py-2 items-center">
                     <div class="flex-grow border-t border-gray-200"></div>
-                    <span class="flex-shrink mx-4 text-xs text-gray-400 uppercase font-medium">Acceso Administrador Segurizado</span>
+                    <span class="flex-shrink mx-4 text-xs text-gray-400 uppercase font-medium">Acceso Administrador</span>
                     <div class="flex-grow border-t border-gray-200"></div>
                 </div>
                 <div class="space-y-2 text-left">
@@ -81,7 +81,7 @@
         </div>
     </div>
 
-    <!-- HEADER PRINCIPAL (ADMIN AUTENTICADO) -->
+    <!-- HEADER PRINCIPAL -->
     <header id="main-header" class="bg-white border-b border-roseGold-200 sticky top-0 z-30 shadow-sm hidden">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
@@ -92,38 +92,42 @@
                     </div>
                     <div>
                         <span class="text-xl font-bold tracking-tight text-gray-900">Glow & <span class="text-roseGold-600">Glamour</span></span>
-                        <p class="text-[10px] text-gray-500">Moneda: Bolivianos (Bs.)</p>
+                        <p id="user-role-badge" class="text-[10px] text-gray-500 font-semibold">Modo: Cliente</p>
                     </div>
                 </div>
-                <!-- 5. Navegación: Ventas e Historial -->
-                <nav class="hidden md:flex space-x-1 lg:space-x-2">
+
+                <!-- NAVEGACIÓN DESKTOP (Se muestra/oculta según el rol) -->
+                <nav id="admin-nav-desktop" class="hidden md:flex space-x-1 lg:space-x-2">
                     <button onclick="switchTab('pos')" id="nav-pos" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-roseGold-500 text-white shadow-sm flex items-center space-x-2">
                         <i class="fa-solid fa-cash-register"></i>
-                        <span>Ventas</span>
+                        <span id="nav-pos-label">Ventas</span>
                     </button>
-                    <button onclick="switchTab('inventory')" id="nav-inventory" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-roseGold-600 hover:bg-roseGold-50 transition-colors flex items-center space-x-2">
+                    <button onclick="switchTab('inventory')" id="nav-inventory" class="admin-only nav-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-roseGold-600 hover:bg-roseGold-50 transition-colors flex items-center space-x-2">
                         <i class="fa-solid fa-boxes-stacked"></i>
                         <span>Inventario</span>
                     </button>
-                    <button onclick="switchTab('history')" id="nav-history" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-roseGold-600 hover:bg-roseGold-50 transition-colors flex items-center space-x-2">
+                    <button onclick="switchTab('history')" id="nav-history" class="admin-only nav-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-roseGold-600 hover:bg-roseGold-50 transition-colors flex items-center space-x-2">
                         <i class="fa-solid fa-clock-rotate-left"></i>
                         <span>Historial</span>
                     </button>
-                    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-roseGold-600 hover:bg-roseGold-50 transition-colors flex items-center space-x-2">
+                    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="admin-only nav-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-roseGold-600 hover:bg-roseGold-50 transition-colors flex items-center space-x-2">
                         <i class="fa-solid fa-chart-pie"></i>
                         <span>Resumen</span>
                     </button>
                 </nav>
+
                 <div class="flex items-center space-x-3">
                     <span id="current-time" class="text-xs font-medium text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full hidden sm:inline-block"></span>
-                    <button onclick="logoutAdmin()" title="Cerrar sesión" class="p-2 text-gray-400 hover:text-roseGold-600 rounded-full hover:bg-roseGold-50 transition-colors">
+                    <button onclick="logoutSession()" title="Salir / Cambiar de modo" class="p-2 text-gray-400 hover:text-roseGold-600 rounded-full hover:bg-roseGold-50 transition-colors flex items-center space-x-1">
                         <i class="fa-solid fa-right-from-bracket"></i>
+                        <span class="text-xs font-semibold hidden sm:inline">Salir</span>
                     </button>
                 </div>
             </div>
         </div>
-        <!-- Navegación móvil inferior -->
-        <div class="md:hidden flex justify-around border-t border-roseGold-100 bg-white py-2 px-1">
+
+        <!-- NAVEGACIÓN MÓVIL (Solo para Administrador) -->
+        <div id="admin-nav-mobile" class="admin-only md:hidden flex justify-around border-t border-roseGold-100 bg-white py-2 px-1">
             <button onclick="switchTab('pos')" id="m-nav-pos" class="m-nav-btn flex flex-col items-center text-roseGold-600 text-xs font-medium px-2 py-1">
                 <i class="fa-solid fa-cash-register text-lg mb-0.5"></i><span>Ventas</span>
             </button>
@@ -141,7 +145,7 @@
 
     <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
-        <!-- VISTA 1: VENTAS -->
+        <!-- VISTA 1: VENTAS / CATÁLOGO -->
         <section id="view-pos" class="tab-content grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div class="lg:col-span-7 xl:col-span-8 flex flex-col space-y-4">
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-roseGold-100 flex flex-col sm:flex-row gap-3">
@@ -177,7 +181,6 @@
                     </div>
                 </div>
 
-                <!-- Totales (7. Descuento manual, 8. Sin IVA, 9. Bolivianos Bs.) -->
                 <div class="p-4 bg-white border-t border-roseGold-100 rounded-b-2xl space-y-3 shadow-lg">
                     <div class="space-y-1.5 text-sm">
                         <div class="flex justify-between text-gray-600">
@@ -207,7 +210,7 @@
             </div>
         </section>
 
-        <!-- VISTA 2: INVENTARIO -->
+        <!-- VISTA 2: INVENTARIO (PROTEGIDA) -->
         <section id="view-inventory" class="tab-content hidden space-y-6">
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-roseGold-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
@@ -248,7 +251,7 @@
             </div>
         </section>
 
-        <!-- VISTA 3: HISTORIAL -->
+        <!-- VISTA 3: HISTORIAL (PROTEGIDA) -->
         <section id="view-history" class="tab-content hidden space-y-6">
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-roseGold-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
@@ -284,7 +287,7 @@
             </div>
         </section>
 
-        <!-- VISTA 4: RESUMEN / DASHBOARD -->
+        <!-- VISTA 4: RESUMEN / DASHBOARD (PROTEGIDA) -->
         <section id="view-dashboard" class="tab-content hidden space-y-6">
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-roseGold-100">
                 <h2 class="text-xl font-bold text-gray-900">Resumen y Estadísticas</h2>
