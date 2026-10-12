@@ -67,3 +67,12 @@ node_modules/
 
 # dataconnect generated files
 .dataconnect
+
+# Archivos de configuración y credenciales privadas
+config.js
+.env
+
+# Dependencias y carpetas del sistema
+node_modules/
+.firebase/
+.DS_Store
