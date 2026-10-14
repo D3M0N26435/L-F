@@ -491,7 +491,7 @@ function handleCheckoutAction() {
 
 function sendOrderToWhatsApp() {
     const { subtotal, discount, total } = updateCartCalculations();
-    let msg = `*¡Hola! Nuevo Pedido - Glow & Glamour*%0A%0A`;
+    let msg = `*¡Hola! Nuevo Pedido - L&F Belleza & Cuidado*%0A%0A`;
     cart.forEach(item => {
         msg += `- ${item.name || ''} (x${item.qty}) : Bs. ${((item.price || 0) * item.qty).toFixed(2)}%0A`;
     });
@@ -779,7 +779,7 @@ function downloadExcelTemplate() {
     const worksheet = XLSX.utils.json_to_sheet(templateData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Plantilla_Productos");
-    XLSX.writeFile(workbook, "Plantilla_Catalogo_GlowGlamour.xlsx");
+    XLSX.writeFile(workbook, "Plantilla_Catalogo_LyF.xlsx");
 }
 
 async function handleExcelUpload(e) {
@@ -872,7 +872,7 @@ function downloadDailyReportPDF() {
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(18);
-    doc.text("GLOW & GLAMOUR - REPORTE DIARIO DE VENTAS", 14, 20);
+    doc.text("L&F BELLEZA & CUIDADO - REPORTE DIARIO", 14, 20);
     doc.setFontSize(11);
     doc.setFont("helvetica", "normal");
     doc.text(`Fecha: ${todayStr} | Moneda: Bolivianos (Bs.)`, 14, 28);

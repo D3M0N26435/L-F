@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Glow & Glamour - Sistema de Ventas e Inventario</title>
+    <title>L&F Belleza & Cuidado - Sistema de Ventas e Inventario</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
@@ -25,9 +25,12 @@
                 extend: {
                     colors: {
                         roseGold: {
-                            50: '#fdf8f6', 100: '#fbe8e6', 200: '#f5d3cf', 300: '#ebb5af',
-                            400: '#e08c82', 500: '#d16659', 600: '#bc4e42', 700: '#9d3f34',
-                            800: '#82372f', 900: '#6c322b',
+                            50: '#fcf9f7', 100: '#f4e8e1', 200: '#e6c8be', 300: '#d7a89b',
+                            400: '#c5837b', 500: '#b76e79', 600: '#9c5560', 700: '#7d424b',
+                            800: '#63353c', 900: '#522c32',
+                        },
+                        gold: {
+                            500: '#d4af37', 600: '#b89728'
                         }
                     },
                     fontFamily: { sans: ['Inter', 'sans-serif'] }
@@ -38,19 +41,18 @@
 </head>
 <body class="custom-bg text-gray-800 font-sans min-h-screen flex flex-col">
 
-    <!-- PANTALLA DE ACCESO / BIENVENIDA & LOGIN ADMIN PROTEGIDO -->
+    <!-- PANTALLA DE ACCESO / LOGIN (LOGO MÁS GRANDE) -->
     <div id="auth-landing-screen" class="fixed inset-0 bg-roseGold-50 z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-roseGold-100 text-center space-y-6">
-            <div class="flex flex-col items-center justify-center space-y-2">
-                <!-- LOGO LOCAL FIJO (LOGIN) -->
-                <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-roseGold-100 flex items-center justify-center text-roseGold-600 shadow-inner overflow-hidden border-2 border-roseGold-200">
-                    <img src="logo.png" alt="Glow & Glamour Logo" class="w-full h-full object-cover">
+            <div class="flex flex-col items-center justify-center space-y-3">
+                <div class="w-32 h-32 sm:w-36 sm:h-36 rounded-3xl bg-roseGold-100 flex items-center justify-center text-roseGold-600 shadow-lg overflow-hidden border-2 border-roseGold-200">
+                    <img src="logo.png" alt="L&F Logo" class="w-full h-full object-cover">
                 </div>
-                <span class="text-[10px] text-gray-400 font-medium">Glow & Glamour - Catálogo Oficial</span>
+                <span class="text-[11px] text-gray-400 font-semibold tracking-wider uppercase">L&F Belleza & Cuidado</span>
             </div>
             <div>
-                <h1 class="text-2xl font-bold text-gray-900">Glow & <span class="text-roseGold-600">Glamour</span></h1>
-                <p class="text-xs text-gray-500 mt-1">Sistema de Belleza & Catálogo en Bolivianos (Bs.)</p>
+                <h1 class="text-2xl font-bold text-gray-900">L&F <span class="text-roseGold-600">Belleza & Cuidado</span></h1>
+                <p class="text-xs text-gray-500 mt-1">Sistema Profesional & Catálogo en Bolivianos (Bs.)</p>
             </div>
             
             <div class="space-y-3 pt-2">
@@ -65,13 +67,12 @@
                 </div>
                 <div class="space-y-2 text-left">
                     <label class="block text-xs font-semibold text-gray-600">Correo Electrónico</label>
-                    <input type="email" id="admin-email" placeholder="admin@glowglamour.com" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-roseGold-500 focus:outline-none">
+                    <input type="email" id="admin-email" placeholder="admin@lyf.com" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-roseGold-500 focus:outline-none">
                 </div>
                 <div class="space-y-2 text-left">
                     <label class="block text-xs font-semibold text-gray-600">Contraseña</label>
                     <input type="password" id="admin-password" placeholder="••••••••" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-roseGold-500 focus:outline-none">
                 </div>
-                <!-- MENSAJE DE ERROR LOGIN SIN ALERTS -->
                 <p id="login-error-msg" class="text-xs text-red-500 font-medium hidden text-left"></p>
                 
                 <button onclick="loginAsAdmin()" class="w-full py-3 px-4 primary-btn font-semibold rounded-xl text-sm transition-all shadow-md flex items-center justify-center space-x-2">
@@ -82,17 +83,16 @@
         </div>
     </div>
 
-    <!-- HEADER PRINCIPAL -->
+    <!-- HEADER PRINCIPAL (LOGO MÁS GRANDE) -->
     <header id="main-header" class="bg-white border-b border-roseGold-200 sticky top-0 z-30 shadow-sm hidden">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16 items-center">
-                <div class="flex items-center space-x-3">
-                    <!-- LOGO LOCAL FIJO (HEADER) -->
-                    <div class="w-10 h-10 rounded-xl bg-roseGold-500 text-white flex items-center justify-center shadow-md overflow-hidden">
+            <div class="flex justify-between h-20 items-center">
+                <div class="flex items-center space-x-3.5">
+                    <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-roseGold-500 text-white flex items-center justify-center shadow-md overflow-hidden border border-roseGold-200">
                         <img src="logo.png" alt="Logo" class="w-full h-full object-cover">
                     </div>
                     <div>
-                        <span class="text-xl font-bold tracking-tight text-gray-900">Glow & <span class="text-roseGold-600">Glamour</span></span>
+                        <span class="text-lg sm:text-xl font-bold tracking-tight text-gray-900">L&F <span class="text-roseGold-600">Belleza & Cuidado</span></span>
                         <p id="user-role-badge" class="text-[10px] text-gray-500 font-semibold">Modo: Cliente</p>
                     </div>
                 </div>
@@ -145,7 +145,6 @@
     </header>
 
     <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-
         <!-- VISTA 1: VENTAS / CATÁLOGO -->
         <section id="view-pos" class="tab-content grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div class="lg:col-span-7 xl:col-span-8 flex flex-col space-y-4">
@@ -288,7 +287,7 @@
             </div>
         </section>
 
-        <!-- VISTA 4: RESUMEN / DASHBOARD -->
+        <!-- VISTA 4: RESUMEN -->
         <section id="view-dashboard" class="tab-content hidden space-y-6">
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-roseGold-100">
                 <h2 class="text-xl font-bold text-gray-900">Resumen y Estadísticas</h2>
@@ -341,7 +340,6 @@
                 </div>
             </div>
         </section>
-
     </main>
 
     <!-- MODAL DE DETALLE DE PRODUCTO -->
@@ -433,9 +431,9 @@
         <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-roseGold-100 flex flex-col max-h-[90vh]">
             <div id="printable-receipt" class="bg-white p-4 font-mono text-xs space-y-3 overflow-y-auto flex-grow">
                 <div class="text-center space-y-1">
-                    <h4 class="font-bold text-base font-sans tracking-wide text-roseGold-700">GLOW & GLAMOUR</h4>
-                    <p class="text-gray-500 text-[10px]">Cosméticos & Belleza Profesional</p>
-                    <p class="text-gray-500 text-[10px]">Oruro, Bolivia</p>
+                    <h4 class="font-bold text-base font-sans tracking-wide text-roseGold-700">L&F BELLEZA & CUIDADO</h4>
+                    <p class="text-gray-500 text-[10px]">Cosméticos & Cuidado Profesional</p>
+                    <p class="text-gray-500 text-[10px]">Bolivia</p>
                     <div class="border-b border-dashed border-gray-300 my-2"></div>
                 </div>
                 <div class="space-y-0.5 text-gray-600 text-[11px]">
@@ -515,7 +513,7 @@
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-gray-600 mb-1">Imagen del Producto (Sube a Cloudinary)</label>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Imagen del Producto (Cloudinary)</label>
                     <input type="file" id="prod-image-file" accept="image/png, image/jpeg, image/jpg" class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-roseGold-500 focus:outline-none file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-roseGold-50 file:text-roseGold-700 hover:file:bg-roseGold-100">
                     <input type="hidden" id="prod-image-url">
                     <div id="image-preview-container" class="mt-2 hidden">
