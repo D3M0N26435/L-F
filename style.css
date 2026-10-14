@@ -1,9 +1,8 @@
-/* 3.- CSS UNIVERSAL / VARIABLES DE COLORES - L&F BELLEZA & CUIDADO */
 :root {
-    --primary-color: #ff009d;     /* Rosa Gold / Rose Gold elegante */
-    --primary-hover: #ff00aa;     /* Rose Gold más oscuro para hover */
+    --primary-color: #e91e63;     /* Rosa fuerte / chillón */
+    --primary-hover: #c2185b;     /* Rosa intenso para hover */
     --gold-accent: #d4af37;       /* Dorado estético */
-    --bg-color: #fcf9f7;          /* Blanco marfil / crema muy suave y estético */
+    --bg-color: #fcf9f7;          /* Fondo marfil suave */
     --card-bg: #ffffff;
     --text-main: #2d2d2d;
 }
@@ -11,15 +10,13 @@
 .custom-bg { background-color: var(--bg-color); }
 .primary-btn { background-color: var(--primary-color); color: white; transition: all 0.2s ease; }
 .primary-btn:hover { background-color: var(--primary-hover); transform: translateY(-1px); }
-.gold-text { color: var(--gold-accent); }
 
-/* Scrollbar estilizado en tonos Rose Gold */
+/* Scrollbar estilizado */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #f4e8e1; }
+::-webkit-scrollbar-track { background: #fce7f3; }
 ::-webkit-scrollbar-thumb { background: var(--primary-color); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--primary-hover); }
 
-/* Ajustes Responsive para Celulares y Tablets */
 @media (max-width: 768px) {
     .mobile-stack { flex-direction: column; }
     .pos-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

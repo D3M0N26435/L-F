@@ -15,7 +15,7 @@ let cart = [];
 let salesHistory = [];
 let currentCategory = 'Todos';
 let currentPaymentMethod = 'Efectivo';
-let whatsappNumber = '59170000000'; // Tu número de WhatsApp con código de país (591)
+let whatsappNumber = '59174134370'; // Tu número de WhatsApp con código de país (591)
 
 // PRODUCTO SELECCIONADO PARA EL MODAL DE DETALLE
 let selectedProductForModal = null;
